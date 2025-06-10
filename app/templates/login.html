@@ -1,0 +1,51 @@
+<!-- You don’t have to write HTML input tags yourself (like <input type="text" name="username">) — Flask-WTF will automatically create those input boxes for you, just by defining them in Python. -->
+{% extends "base.html" %}
+{% block content %}
+    <h1> Sign In</h1>
+    <form action="" method="post" novalidate>
+        <!-- 1. GET — Like passing info in the address bar (visible)
+💬 Real life example:
+You go to a website and search for “iPhone” —
+you see the URL change to something like:
+https://example.com/search?query=iPhone
+→ That’s GET. The form data is sent in the URL. So the server can "get" the info from 
+the URL.
+
+✅ 2. POST — Like sending info in a secret envelope
+In POST, the browser sends data in the background, not in the URL. So the address bar stays clean. Sending through the REQUEST body(web scraping theory)
+
+💬 Real life example:
+When you log in with a form (username and password), it would be very bad if your password showed up in the URL, right? That’s why login forms use POST. -->
+
+
+<!-- <form method="post">
+    {{ form.username.label }}  → creates: <label for="username">Username</label>
+    {{ form.username() }}      → creates: <input type="text" name="username" id="username">
+
+    {{ form.password.label }}  → creates: <label for="password">Password</label>
+    {{ form.password() }}      → creates: <input type="password" name="password" id="password">
+
+    {{ form.submit() }}        → creates: <input type="submit" value="Sign In">
+</form> -->
+
+        {{form.hidden_tag()}}
+        <p> 
+            {{form.username.label}}<br>
+            {{form.username(size=32)}}
+            <!-- this form is the form.py from it renders everything automatically. youve to define it in a python file for the automatic thing. -->
+            {% for error in form.username.errors %}
+            <span style="color : red;">[{{error}}]</span>
+            {% endfor %}
+        </p>
+        <p> 
+            {{form.password.label}}<br>
+            {{form.password(size=32)}}<br>
+            {% for error in form.password.errors %}
+            <span style="color : red;">[{{error}}]</span>
+            {% endfor %}
+        </p>
+        <p> {{form.remember_me()}} {{form.remember_me.label}}</p>
+        <p> {{form.submit()}}</p>
+        
+    </form>
+{% endblock %}
