@@ -31,6 +31,16 @@ def index():
     return render_template("index.html",title='m  ', user = user , posts=posts)
 # The render_template() function invokes the Jinja template engine that comes bundled with the Flask framework. Jinja substitutes {{ ... }} blocks with the corresponding values, given by the arguments provided in the render_template() call.
 
+# When a user visits /login, this happens:
+# 1.routes.py has a route for /login.
+# 2.It creates a LoginForm() from forms.py.
+# 3.It passes the form to login.html.
+# 4.login.html uses Jinja2 to render the form fields and buttons.
+# 5.When user submits, the POST request hits the same route.
+# 6.Flask validates the form.
+# 7.You redirect or flash messages based on success/failure.
+# 8.All data goes into the DB using models.py.
+
 @app.route('/login', methods = ['GET','POST'])
 def login():
     form = LoginForm()
