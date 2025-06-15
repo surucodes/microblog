@@ -7,10 +7,17 @@ import sqlalchemy.orm as so
 from app import db
 # Imports the db object from your Flask app’s app/__init__.py. This db is an instance of Flask-SQLAlchemy, a Flask extension that simplifies SQLAlchemy integration with Flask. It’s configured to connect to your database (e.g., SQLite via sqlite:///app.db) and is used to define models and interact with the database.
 from datetime import datetime,timezone
+from werkzeug.security import generate_password_hash, check_password_hash
+#Used to transform a password into a long encoded string through some series of cryptographic operations that have no reverse operation. And two passwords have different cryptographic salts which make them not possible to identify if two people have the same password. 
+
+from flask_login import UserMixin
+# instead of Writing All That code for each of the 4 requirement of the flask login, Flask-Login gives you a ready-made class called UserMixin, which already includes all of these, so you don’t have to write them manually. so,UserMixin is a convenient helper class provided by Flask-Login that gives your User model all the basic methods and properties Flask-Login needs.
+
+from app import login 
 
 
 # This class defines the structure of the user table, including its columns (fields) and their properties. It allows you to create, read, update, and delete (CRUD) user records in the database using Python code.
-class User(db.Model):
+class User(UserMixin, db.Model):
     # Why is a constructor not needed here ? 
     # When you do this:
 
@@ -55,6 +62,13 @@ class User(db.Model):
         return '<User {}>'.format(self.username)
     # Purpose: Provides a human-readable representation of a User object when printed or inspected, making it easier to debug or test your code.
 
+    def set_password(self,password):
+        self.password_hash=generate_password_hash(password, method = 'pbkdf2:sha256')
+
+    def check_password(self,password):
+        return check_password_hash(self.password_hash, password )
+
+
 class Post(db.Model):
     id: so.Mapped[int] = so.mapped_column(primary_key = True)
     body: so.Mapped[str] = so.mapped_column(sa.String(140))
@@ -77,3 +91,40 @@ class Post(db.Model):
     def __repr__(self):
         return '<Post {}>'.format(self.body)
     
+# Preparing the User Model for Flask-Login :
+
+#  But Flask-Login doesn’t know how your User class looks. So it just says:
+# “I’ll work with any User model, as long as it gives me 4 basic things.”:
+
+# 1. is_authenticated
+# 🔍 What is it?
+# Returns True if the user has provided valid credentials (i.e., they’re logged in).
+
+# 2. is_active
+# 🔍 What is it?
+# Returns True if the user account is active.
+
+# 🔸 Use case: Useful if you want to disable certain user accounts (e.g., banned, deleted).
+
+# 3. is_anonymous
+# 🔍 What is it?
+# Returns True if the user is not logged in (anonymous).
+
+# 🔸 Use case: Flask-Login uses this to distinguish between a real user and a guest browsing your site.
+
+# 4. get_id()
+# 🔍 What is it?
+# Returns a unique string ID for the user.
+
+# 🔸 Use case: Flask-Login stores this ID in the session to remember who the user is.
+
+@login.user_loader
+# this decorator registers the function as the way to look tp/ a special function that tells Flask-Login how to find a user in your database given their ID.
+# User logs in → Flask-Login stores user.id in session.
+# New request eg user visits dashboard/→ Flask-Login calls load_user(user_id) internally(the decorator's work').
+# Your function retrieves and returns User object.
+# Flask-Login sets current_user to that User.
+def load_user(id):
+# the id is always a string hence convert it into int before returning.
+    return db.session.get(User,int(id))
+# look inside User table, find the row where id matches primary key id and return the whole User object ex <User id=3, username='suraj', email='suraj@example.com'>
