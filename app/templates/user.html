@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <table>
+        <tr valign="top"> 
+            <td><img src= "{{ user.avatar(128) }}"></td>
+            <td>
+                <h1>User:{{ user.username }}</h1>
+                {% if user.about_me %}<p>{{ user.about_me }}</p>{% endif %}
+                {% if user.last_seen %}<p>Last seen on: {{ user.last_seen }}</p>{% endif %}
+                {% if user == current_user %}<p><a href="{{url_for('edit_profile')}}">Edit your profile</a></p>{% endif %}
+  <!--The first time someone clicks on this link, the request is of type GET so in the edit_profile view function , the  
+  elif request.method == 'GET':
+        form.username.data = current_user.username
+        form.about_me.data = current_user.about_me
+    return render_template('edit_profile.html', title='Edit Profile', form= form)
+is run and we get to see the form with the return render template and when someone edits the input fields and clicks on submit, since the editprofile form has <form action="" method="post">(no action),a POST request is sent back to the same view funciton  and in the view function, the first if condition is executed where the inputted data is saved to the database -->
+                
+            </td>
+        </tr>
+    </table>
+    <hr>
+    {% for post in posts %}
+    <!-- <table> 
+        <tr valign="top">
+            <td><img src="{{ post.author.avatar(36)}}"></td>
+            <td> {{ post.author.username }} says:<br>{{ post.body }}</td>
+        </tr>
+    </table> To invoke this sub-template from the user.html template I use Jinja's include statement:-->
+        {%  include '_post.html' %}
+    {% endfor %}
+{% endblock %}

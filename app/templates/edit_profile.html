@@ -1,0 +1,28 @@
+{% extends "base.html"%}
+
+{% block content %}
+    <h1>Edit Profile</h1>
+    <form action="" method="post">
+        <!-- 🔁 So what happens on submit?
+You’re already at /edit_profile via a GET request.
+You submit the form with method="post".
+The browser sends a POST request back to /edit_profile.
+That POST request hits the same view function: -->
+        {{form.hidden_tag()}}
+        <p>
+            {{ form.username.label }}<br>
+            {{ form.username(size=32)}}<br>
+            {% for error in form.username.errors %}
+            <span style="color:red;">[{{error}}]</span>
+            {% endfor %}
+        </p>
+        <p>
+            {{ form.about_me.label }}<br>
+            {{ form.about_me(cols=50,rows = 4)}}<br>
+            {% for error in form.about_me.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+        <p>{{ form.submit() }}</p>
+    </form>
+{% endblock %}

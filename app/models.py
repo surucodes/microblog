@@ -15,7 +15,7 @@ from flask_login import UserMixin
 
 from app import login 
 
-
+from hashlib import md5
 # This class defines the structure of the user table, including its columns (fields) and their properties. It allows you to create, read, update, and delete (CRUD) user records in the database using Python code.
 class User(UserMixin, db.Model):
     # Why is a constructor not needed here ? 
@@ -58,6 +58,11 @@ class User(UserMixin, db.Model):
     password_hash : so.Mapped[Optional[str]] = so.mapped_column(sa.String(256))
     #  defines that The column can be nullable in database terms.
     posts : so.WriteOnlyMapped['Post'] = so.relationship(back_populates='author')
+
+    about_me : so.Mapped[Optional[str]] = so.mapped_column(sa.String(140))
+    # a bit about the user to showcase beside the user profile.
+    last_seen : so.Mapped[Optional[datetime]] = so.mapped_column(default=lambda: datetime.now(timezone.utc))
+    # when the user was last active 
     def __repr__(self):
         return '<User {}>'.format(self.username)
     # Purpose: Provides a human-readable representation of a User object when printed or inspected, making it easier to debug or test your code.
@@ -68,6 +73,9 @@ class User(UserMixin, db.Model):
     def check_password(self,password):
         return check_password_hash(self.password_hash, password )
 
+    def avatar(self,size):
+        digest = md5(self.email.lower().encode('utf-8')).hexdigest()
+        return f'https://www.gravatar.com/avatar/{digest}?d=identicon&s={size}'
 
 class Post(db.Model):
     id: so.Mapped[int] = so.mapped_column(primary_key = True)
@@ -128,3 +136,5 @@ def load_user(id):
 # the id is always a string hence convert it into int before returning.
     return db.session.get(User,int(id))
 # look inside User table, find the row where id matches primary key id and return the whole User object ex <User id=3, username='suraj', email='suraj@example.com'>
+
+# whenever current_user is accessed, Flask-Login calls the load_user function (registered with @login.user_loader) to retrieve the User object from the database using the id stored in the session. The function converts the id (a string) to an integer and returns the User object via db.session.get(User, int(id)). This sets current_user for the request.

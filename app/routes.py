@@ -13,8 +13,9 @@ from flask_login import logout_user
 from flask_login import login_required
 from flask import request 
 from urllib.parse import urlsplit
-
+from datetime import datetime,timezone
 from app.forms import RegistrationForm
+from app.forms import EditProfileForm
 @app.route('/')
 @app.route('/index')
 @login_required
@@ -113,8 +114,16 @@ def logout():
     logout_user()
     return redirect(url_for('index'))
 
+# Example workflow when a user clicks on a link that leads to a view funciton:
+# The first time someone clicks on this link, the request is of type GET so in the edit_profile view function , the  
+#   elif request.method == 'GET':
+#         form.username.data = current_user.username
+#         form.about_me.data = current_user.about_me
+#     return render_template('edit_profile.html', title='Edit Profile', form= form)
+# is run and we get to see the form with the return render template and when someone edits the input fields and clicks on submit, since the editprofile form has <form action="" method="post">(no action),a POST request is sent back to the same view funciton  and in the view function, the first if condition is executed where the inputted data is saved to the database.
 
 @app.route('/register', methods= ['GET', 'POST'])
+# this view function accepts both get and post requests.
 def register():
     if current_user.is_authenticated:
         return redirect(url_for('index'))
@@ -128,3 +137,44 @@ def register():
         flash('Congratulations , you are now a registered user!')
         return redirect(url_for('login'))
     return render_template('register.html', title = 'Register',form= form)
+
+@app.route('/user/<username>')
+# The @app.route decorator for this view function includes a dynamic component, <username>, which allows Flask to accept any text in that URL part and pass it as an argument to the view function. For instance, a request to /user/susan will call the view with username set to ‘susan’.
+# and this view funciton is only accessible to logged in users hence the @login_required decorator
+@login_required
+def user(username):
+    user = db.first_or_404(sa.select(User).where(User.username==username))
+    # works like scalar() when there are results, but in the case that there are no results it automatically sends a 404 error back to the client.
+    posts = [
+      {'author':user,'body': 'Test Post #1'},
+      {'author':user,'body': 'Test post #2'}
+  ]
+    return render_template('user.html', user=user , posts=posts) 
+
+# The code adds functionality to track when a user was last active (their “last visit” time) by updating a last_seen field in the User model every time they make a request to your Flask app (e.g., loading a page). Instead of adding this logic to every route (like /index or /login), Flask’s @before_request decorator lets you run this code automatically before any request is handled.
+@app.before_request
+# A Flask decorator that tells your app to run the before_request() function before every request (e.g., when a user visits /index, /profile, or any other route).
+def before_request():
+    if current_user.is_authenticated:
+        current_user.last_seen = datetime.now(timezone.utc)
+        # Why no db.session.add()?: When current_user is accessed, Flask-Login loads the user from the database (via the user loader function), automatically adding it to the db.session. So, you don’t need to call db.session.add(current_user) again.
+
+        # Why no db.session.add()?: When current_user is accessed, Flask-Login loads the user from the database (via the user loader function), automatically adding it to the db.session. So, you don’t need to call db.session.add(current_user) again.
+        db.session.commit()
+
+@app.route('/edit_profile', methods=['GET','POST'])
+@login_required
+def edit_profile():
+    form = EditProfileForm(current_user.username)
+    # if the user is adding his aboutme or editing the existing username, it is added to the databse.
+    if form.validate_on_submit():
+        current_user.username = form.username.data
+        current_user.about_me = form.about_me.data
+        db.session.commit()
+        flash('Your changes have been saved.')
+        return redirect(url_for('edit_profile'))
+    # if there is no post request , i.e of the user is only viewing, then fill the fields in the placeholder with the existing thing in the database. 
+    elif request.method == 'GET':
+        form.username.data = current_user.username
+        form.about_me.data = current_user.about_me
+    return render_template('edit_profile.html', title='Edit Profile', form= form)
